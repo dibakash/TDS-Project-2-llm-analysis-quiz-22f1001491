@@ -2,26 +2,17 @@ from langgraph.graph import StateGraph, END, START
 from langchain_core.rate_limiters import InMemoryRateLimiter
 from langgraph.prebuilt import ToolNode
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from tools import (
-    get_rendered_html,
-    download_file,
-    post_request,
-    run_code,
-    add_dependencies,
-)
+from tools import get_rendered_html, download_file, post_request, run_code, add_dependencies
 from typing import TypedDict, Annotated, List, Any
 from langchain.chat_models import init_chat_model
 from langgraph.graph.message import add_messages
 import os
 from dotenv import load_dotenv
-
 load_dotenv()
 
 EMAIL = os.getenv("EMAIL")
 SECRET = os.getenv("SECRET")
-RECURSION_LIMIT = 5000
-
-
+RECURSION_LIMIT =  5000
 # -------------------------------------------------
 # STATE
 # -------------------------------------------------
@@ -36,13 +27,15 @@ TOOLS = [run_code, get_rendered_html, download_file, post_request, add_dependenc
 # GEMINI LLM
 # -------------------------------------------------
 rate_limiter = InMemoryRateLimiter(
-    requests_per_second=9 / 60,
-    check_every_n_seconds=1,
-    max_bucket_size=9,
+    requests_per_second=9/60,  
+    check_every_n_seconds=1,  
+    max_bucket_size=9  
 )
 llm = init_chat_model(
-    model_provider="google_genai", model="gemini-2.5-flash", rate_limiter=rate_limiter
-).bind_tools(TOOLS)
+   model_provider="google_genai",
+   model="gemini-2.5-flash",
+   rate_limiter=rate_limiter
+).bind_tools(TOOLS)   
 
 
 # -------------------------------------------------
@@ -92,9 +85,10 @@ YOUR JOB:
 - Then respond with: END
 """
 
-prompt = ChatPromptTemplate.from_messages(
-    [("system", SYSTEM_PROMPT), MessagesPlaceholder(variable_name="messages")]
-)
+prompt = ChatPromptTemplate.from_messages([
+    ("system", SYSTEM_PROMPT),
+    MessagesPlaceholder(variable_name="messages")
+])
 
 llm_with_prompt = prompt | llm
 
@@ -133,17 +127,19 @@ def route(state):
     if isinstance(content, list) and content[0].get("text").strip() == "END":
         return END
     return "agent"
-
-
 graph = StateGraph(AgentState)
 
 graph.add_node("agent", agent_node)
 graph.add_node("tools", ToolNode(TOOLS))
 
 
+
 graph.add_edge(START, "agent")
 graph.add_edge("tools", "agent")
-graph.add_conditional_edges("agent", route)
+graph.add_conditional_edges(
+    "agent",    
+    route       
+)
 
 app = graph.compile()
 
@@ -152,8 +148,8 @@ app = graph.compile()
 # TEST
 # -------------------------------------------------
 def run_agent(url: str) -> str:
-    app.invoke(
-        {"messages": [{"role": "user", "content": url}]},
+    app.invoke({
+        "messages": [{"role": "user", "content": url}]},
         config={"recursion_limit": RECURSION_LIMIT},
     )
     print("Tasks completed succesfully")
