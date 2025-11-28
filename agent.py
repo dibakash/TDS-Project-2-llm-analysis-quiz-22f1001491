@@ -175,3 +175,6 @@ def run_agent(url: str) -> str:
         config={"recursion_limit": RECURSION_LIMIT},
     )
     print("Tasks completed succesfully")
+
+
+# -------------------------------------------------
